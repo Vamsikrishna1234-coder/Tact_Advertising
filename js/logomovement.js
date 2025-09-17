@@ -27,17 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }, 2500);
 
-  // === LOGO MOVE ACROSS SCROLL (scrubbed) ===
-  // This automatically maps scroll progress to x position smoothly
-  gsap.to("#logo", {
-    x: maxX,
-    ease: "none",
-    scrollTrigger: {
-      trigger: stepStartSection,
-      start: "top top",
-      endTrigger: stepEndSection,
-      end: "bottom bottom",
-      scrub: true
-    }
-  });
+  // === LOGO MOVE ACROSS SCROLL (only on desktop) ===
+  if (window.innerWidth >= 1024) {   // set breakpoint here
+    gsap.to("#logo", {
+      x: maxX,
+      ease: "none",
+      scrollTrigger: {
+        trigger: stepStartSection,
+        start: "top top",
+        endTrigger: stepEndSection,
+        end: "bottom bottom",
+        scrub: true
+      }
+    });
+  }
 });

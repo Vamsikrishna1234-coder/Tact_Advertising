@@ -1,49 +1,83 @@
 
-document.addEventListener('DOMContentLoaded', function () {
+
+document.addEventListener('DOMContentLoaded', () => {
   const tactNode = document.querySelector('.wm-word.tact');
   if (!tactNode) return;
 
-  // Split TACT into spans
+  // Build spans for letters
   const text = tactNode.textContent.trim();
-  tactNode.innerHTML = text.split('').map(l => `<span class="wm-letter">${l}</span>`).join('');
+  tactNode.innerHTML = text.split('').map(ch => `<span class="wm-letter">${ch}</span>`).join('');
   const letterEls = Array.from(tactNode.querySelectorAll('.wm-letter'));
+  if (!letterEls.length) return;
 
-  // Grab sections
-  let allSections = Array.from(document.querySelectorAll('.color-step'));
-  if (!allSections.length) {
-    allSections = Array.from(document.querySelectorAll('section'));
+  // SECTION SELECTORS in exact order
+  const sectionSelectors = [
+    '.tactstatement-container', // -> T
+    '#brand-section',         // -> A
+    '.team-container',          // -> C
+    '.contact-container'        // -> T
+  ];
+  let sections = sectionSelectors.map(sel => document.querySelector(sel)).filter(Boolean);
+
+  // Safety: map only up to letters available
+  if (sections.length > letterEls.length) {
+    sections = sections.slice(0, letterEls.length);
   }
 
-  const heroSection = allSections[0];            // Hero = first section
-  const stepSections = allSections.slice(1);     // Start filling from section 2
-  const maxSteps = Math.min(letterEls.length, stepSections.length);
+  function setLetters(count) {
+    // Fill cumulatively up to "count"
+    letterEls.forEach((el, i) => el.classList.toggle('filled', i < count));
+  }
 
-  const obsOptions = { root: null, threshold: 0.5 };
+  function computeActiveCount() {
+    if (!sections.length) return 0;
+    const vpCenter = window.innerHeight / 2;
+    const rects = sections.map(s => s.getBoundingClientRect());
 
-  const observer = new IntersectionObserver((entries) => {
-    const visible = entries
-      .filter(e => e.isIntersecting)
-      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-    if (!visible) return;
-
-    if (visible.target === heroSection) {
-      // Reset completely in Hero
-      letterEls.forEach(el => el.classList.remove('filled'));
-    } else {
-      const stepIndex = stepSections.indexOf(visible.target);
-      const fillCount = Math.max(0, Math.min(maxSteps, stepIndex + 1));
-
-      letterEls.forEach((el, i) => {
-        if (i < fillCount) el.classList.add('filled');
-        else el.classList.remove('filled');
-      });
+    // If center is inside a section → return its index+1
+    for (let i = 0; i < rects.length; i++) {
+      if (vpCenter >= rects[i].top && vpCenter <= rects[i].bottom) {
+        return i + 1;
+      }
     }
-  }, obsOptions);
 
-  // Observe hero + all step sections
-  if (heroSection) observer.observe(heroSection);
-  stepSections.forEach(sec => observer.observe(sec));
+    // Otherwise count how many sections' centers are above vpCenter
+    let count = 0;
+    for (let i = 0; i < rects.length; i++) {
+      const center = rects[i].top + rects[i].height / 2;
+      if (vpCenter >= center) count = i + 1;
+    }
 
-  window.addEventListener('unload', () => observer.disconnect());
+    return count;
+  }
+
+  let ticking = false;
+  function update() {
+    ticking = false;
+    const count = computeActiveCount();
+    setLetters(count);
+  }
+
+  function requestUpdate() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  // Events
+  window.addEventListener('scroll', requestUpdate, { passive: true });
+  window.addEventListener('resize', requestUpdate);
+  window.addEventListener('load', requestUpdate);
+
+  // In case images load late
+  document.addEventListener('load', (e) => {
+    if (e.target && e.target.tagName === 'IMG') requestUpdate();
+  }, true);
+
+  const mo = new MutationObserver(requestUpdate);
+  mo.observe(document.body, { childList: true, subtree: true });
+
+  // Initial run
+  requestUpdate();
 });

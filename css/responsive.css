@@ -289,4 +289,19 @@
 
 
 
+/* Mobile & tablet: keep fixed centering but remove big margin */
+/* Mobile & tablet: make the big statement text normal */
+@media (max-width: 992px) {
+  #tact-statement .statement-big {
+    position: static !important;   /* no fixed positioning */
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;    /* remove translate offsets */
+    margin: 20px auto !important;  /* center with normal margins */
+    width: 90% !important;         /* shrink to fit small screen */
+    text-align: center !important; /* center text */
+  }
+}
+
+
 

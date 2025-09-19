@@ -1,9 +1,18 @@
 
-// logo perfect //
 (function () {
   const sections = Array.from(document.querySelectorAll("section"));
   if (!sections.length) return;
 
+  // ✅ disable on mobile/tablet
+  const isSmallScreen = window.matchMedia("(max-width: 992px)").matches;
+  if (isSmallScreen) {
+    // normal scrolling behaviour on mobile/tablet
+    document.documentElement.style.scrollBehavior = "smooth";
+    document.body.style.overflow = "auto";
+    return; // stop running the rest of the script
+  }
+
+  // ✅ fullpage scroll for desktop only
   document.documentElement.style.scrollBehavior = "auto";
   document.body.style.overflow = "hidden";
 
@@ -13,7 +22,6 @@
 
   const clamp = i => Math.max(0, Math.min(i, sections.length - 1));
 
-  // Calculate positions based on stable layout
   const updatePositions = () => {
     positions = sections.map(s => s.offsetTop);
   };
@@ -74,18 +82,14 @@
     goTo(currentIndex);
   });
 
-  // ✅ Init after everything (fonts, images, videos) is loaded
   window.addEventListener("load", () => {
     updatePositions();
     goTo(0);
 
-    // Extra safety: recheck after 1s in case images load late
     setTimeout(() => {
       updatePositions();
       goTo(currentIndex);
     }, 500);
-
-    
   });
 })();
 

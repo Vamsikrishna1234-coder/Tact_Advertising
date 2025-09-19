@@ -31,7 +31,7 @@
   min-height: 100dvh;
   position: relative;
   overflow: hidden;
-  margin-bottom: 150px;
+  margin-bottom: 280px;
   height: auto;
 }
 
@@ -318,7 +318,7 @@
 .brand-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  
+  margin-right:20px ;
   
 }
 .brand-grid img {
@@ -706,3 +706,21 @@ body {
   margin-top: 0 !important;
 }
 }
+
+
+#tact-statement .statement-big {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -70%);
+  margin: 0;
+  z-index: 10;
+  margin-left: 18.5rem;
+}
+
+#tact-statement::after {
+  content: "";
+  display: block;
+  height: 100vh;  /* so the next section appears correctly */
+}
+

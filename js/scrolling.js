@@ -1,65 +1,180 @@
-document.addEventListener("DOMContentLoaded", () => {
-  gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
-  const breakpoint = 992; // only run snapping above 992px (desktop)
+// logo perfect //
+(function () {
+  const sections = Array.from(document.querySelectorAll("section"));
+  if (!sections.length) return;
 
-  // If we're on tablet/phone, do nothing and make sure normal scrolling works
-  if (window.innerWidth <= breakpoint) {
-    // Kill any existing ScrollTriggers just in case
-    ScrollTrigger.getAll().forEach(t => t.kill());
-    // Make sure body scrolls normally
-    document.body.style.overflowY = 'auto';
-    return; // skip the rest of the snapping code
-  }
+  document.documentElement.style.scrollBehavior = "auto";
+  document.body.style.overflow = "hidden";
 
-  // === DESKTOP SNAPPING CODE ===
-  const sections = gsap.utils.toArray("section");
+  let currentIndex = 0;
+  let isLocked = false;
+  let positions = [];
 
-  function calcSnapPoints() {
-    const scrollRange = document.documentElement.scrollHeight - window.innerHeight;
-    if (scrollRange <= 0) return [0];
-    return sections.map(s => +(s.offsetTop / scrollRange).toFixed(5));
-  }
+  const clamp = i => Math.max(0, Math.min(i, sections.length - 1));
 
-  let snapPoints = calcSnapPoints();
+  // Calculate positions based on stable layout
+  const updatePositions = () => {
+    positions = sections.map(s => s.offsetTop);
+  };
 
-  function initSnapTrigger() {
-    snapPoints = calcSnapPoints();
-
-    ScrollTrigger.create({
-      start: 0,
-      end: () => document.documentElement.scrollHeight - window.innerHeight,
-      snap: {
-        snapTo: snapPoints,
-        duration: 0.2,
-        delay: 0,
-        ease: "none",
-        directional: true
-      },
-      onRefresh(self) {
-        snapPoints = calcSnapPoints();
-        if (self.vars && self.vars.snap) {
-          self.vars.snap.snapTo = snapPoints;
-        }
-      }
+  function goTo(index) {
+    index = clamp(index);
+    currentIndex = index;
+    window.scrollTo({
+      top: positions[currentIndex],
+      left: 0,
+      behavior: "auto"
     });
   }
 
-  if (sections.length > 1) {
-    setTimeout(() => {
-      gsap.to(window, {
-        scrollTo: { y: sections[1], autoKill: false },
-        ease: "power2.inOut",
-        onComplete: () => {
-          initSnapTrigger();
-          setTimeout(() => ScrollTrigger.refresh(), 60);
-        }
-      });
-    }, 2500);
-  } else {
-    initSnapTrigger();
+  function step(dir) {
+    const target = clamp(currentIndex + dir);
+    if (target === currentIndex) return;
+
+    isLocked = true;
+    updatePositions();
+    goTo(target);
+
+    setTimeout(() => { isLocked = false; }, 800);
   }
 
-  window.addEventListener("load", () => ScrollTrigger.refresh());
-  window.addEventListener("resize", () => ScrollTrigger.refresh());
-});
+  // Wheel
+  window.addEventListener("wheel", e => {
+    e.preventDefault();
+    if (isLocked) return;
+    if (Math.abs(e.deltaY) < 6) return;
+    step(e.deltaY > 0 ? 1 : -1);
+  }, { passive: false });
+
+  // Keyboard
+  window.addEventListener("keydown", e => {
+    if (isLocked) return;
+    if (e.key === "ArrowDown") step(1);
+    else if (e.key === "ArrowUp") step(-1);
+  });
+
+  // Touch
+  let touchStartY = 0;
+  window.addEventListener("touchstart", e => {
+    if (e.touches[0]) touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  window.addEventListener("touchend", e => {
+    if (isLocked) return;
+    const y = e.changedTouches[0]?.clientY || 0;
+    const dy = touchStartY - y;
+    if (Math.abs(dy) < 40) return;
+    step(dy > 0 ? 1 : -1);
+  }, { passive: true });
+
+  // Resize
+  window.addEventListener("resize", () => {
+    updatePositions();
+    goTo(currentIndex);
+  });
+
+  // ✅ Init after everything (fonts, images, videos) is loaded
+  window.addEventListener("load", () => {
+    updatePositions();
+    goTo(0);
+
+    // Extra safety: recheck after 1s in case images load late
+    setTimeout(() => {
+      updatePositions();
+      goTo(currentIndex);
+    }, 500);
+
+    
+  });
+})();
+
+
+
+
+
+
+// (function () {
+//   const sections = Array.from(document.querySelectorAll("section"));
+//   if (!sections.length) return;
+
+//   window.history.scrollRestoration = "manual";
+
+//   document.documentElement.style.scrollBehavior = "auto";
+//   document.body.style.overflow = "hidden";
+
+//   let currentIndex = 0;
+//   let isLocked = false;
+//   let positions = [];
+
+//   const clamp = i => Math.max(0, Math.min(i, sections.length - 1));
+
+//   const updatePositions = () => {
+//     positions = sections.map(s => s.offsetTop);
+//   };
+
+//   function goTo(index, force = false) {
+//     index = clamp(index);
+//     if (!force && currentIndex === index) return;
+//     currentIndex = index;
+//     window.scrollTo({
+//       top: positions[currentIndex],
+//       left: 0,
+//       behavior: "smooth"
+//     });
+//   }
+
+//   function step(dir) {
+//     const target = clamp(currentIndex + dir);
+//     if (target === currentIndex) return;
+
+//     isLocked = true;
+//     updatePositions();
+//     goTo(target, true);
+
+//     // unlock after smooth scroll finishes
+//     setTimeout(() => { isLocked = false; }, 800);
+//   }
+
+//   // ✅ Wheel scroll (only one trigger per gesture)
+//   let wheelTimeout;
+//   window.addEventListener("wheel", e => {
+//     e.preventDefault();
+//     if (isLocked) return;
+
+//     clearTimeout(wheelTimeout);
+//     wheelTimeout = setTimeout(() => {
+//       if (Math.abs(e.deltaY) > 40) {
+//         step(e.deltaY > 0 ? 1 : -1);
+//       }
+//     }, 60); // debounce small wheel events
+//   }, { passive: false });
+
+//   // ✅ Keyboard navigation
+//   window.addEventListener("keydown", e => {
+//     if (isLocked) return;
+//     if (e.key === "ArrowDown") step(1);
+//     else if (e.key === "ArrowUp") step(-1);
+//   });
+
+//   // ✅ Touch navigation
+//   let touchStartY = 0;
+//   window.addEventListener("touchstart", e => {
+//     if (e.touches[0]) touchStartY = e.touches[0].clientY;
+//   }, { passive: true });
+
+//   window.addEventListener("touchend", e => {
+//     if (isLocked) return;
+//     const y = e.changedTouches[0]?.clientY || 0;
+//     const dy = touchStartY - y;
+//     if (Math.abs(dy) < 50) return;
+//     step(dy > 0 ? 1 : -1);
+//   }, { passive: true });
+
+//   window.addEventListener("resize", updatePositions);
+
+//   window.addEventListener("load", () => {
+//     updatePositions();
+//     goTo(0, true);
+//   });
+// })();
